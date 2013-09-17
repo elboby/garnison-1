@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+{% block container_content %}
+
+
+
+      <!-- Example row of columns -->
+      <div class="row-fluid" id="log">
+
+      </div>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function(){
+            $('form').submit(function(event){
+                ws.send($('#data').val())
+                return false;
+            });
+            if ("WebSocket" in window) {
+                ws = new WebSocket("{{ url_for('gachette-web-socket.connect', _external=True, _scheme='ws:') }}");
+                ws.onopen = function() {
+                    ws.send("subscribe");
+                };
+                ws.onmessage = function (msg) {
+                    $("#log").append("<p>"+msg.data+"</p>")
+                };
+            } else {
+                alert("WebSocket not supported");   
+            }
+        });
+    </script>
+
+{% endblock %}

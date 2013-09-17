@@ -1,0 +1,17 @@
+# fabric
+BUILD_HOST = "vagrant@192.168.3.201"
+
+REDIS_HOST = "192.168.3.201"
+REDIS_PORT = "6379"
+
+# celery
+BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
+
+# flask
+SERVER_NAME = "192.168.3.1:5000"
+BOOTSTRAP_USE_MINIFIED = True
+BOOTSTRAP_USE_CDN = True
+BOOTSTRAP_FONTAWESOME = True
+SECRET_KEY = 'sdfdsfdsfs2322323dsfdf'
+CSRF_ENABLED = False
+CSRF_SESSION_KEY = "dsvdfd fdfvdffdvfdfgfdgfdg"
