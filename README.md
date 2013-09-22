@@ -11,14 +11,14 @@ To launch the webserver:
     $ cd garnison
     $ mkvirtualenv garnison
     $ pip install --upgrade -r requirements.pip
-    $ GACHETTE_SETTINGS=./config.rc ./runserver.py
+    $ GACHETTE_SETTINGS=./config.rc ./manage.py runserver
     
 It can also run as a uwsgi app.
 
 To launch the celery consumer:
 
     $ cd garnison
-    $ GACHETTE_SETTINGS="./config.rc" celery -A gachette_web.tasks worker -l debug --purge
+    $ GACHETTE_SETTINGS=./config.rc celery -A gachette_web.tasks worker -l debug --purge
 
 You will need to have an instance of Redis running as well and configured in the `config.rc` file.
 
@@ -34,5 +34,9 @@ Todo
 ====
 
 * authentication (github oauth)
-* webui+websocket
+* websocket
 * logs / error handling
+* locking (not build the projects in // for 1 stack)
+* integration with mise-a-feu
+* status page for deployment, hosts
+* replace meta api for stack
