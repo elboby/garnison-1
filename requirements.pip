@@ -10,3 +10,4 @@ flask-wtf
 flask-bootstrap
 gevent-websocket
 la-gachette
+flask-script
