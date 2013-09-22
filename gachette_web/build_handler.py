@@ -12,11 +12,11 @@ blueprint = Blueprint('gachette-web-build', __name__,
 
 PROJECTS_DATA = {
     'test_config': {
-        'repo': 'git@github.com:ops_hero/test_config.git',
+        'repo': 'git@github.com:ops-hero/test_config.git',
         'path_to_missile': None
     },
     'test_application': {
-        'repo': 'git@github.com:ops_hero/test_application.git',
+        'repo': 'git@github.com:ops-hero/test_application.git',
         'path_to_missile': None
     },
 }
@@ -48,7 +48,6 @@ def build_create():
     if form.validate_on_submit():
 
         # variables preparation
-        host = current_app.config.get("BUILD_HOST")        
         name = "%s-%s" % (form.project.data, form.branch.data)
         project = form.project.data
         url = PROJECTS_DATA[project]['repo'] if form.url.data == "" else form.url.data
@@ -62,7 +61,7 @@ def build_create():
         print "webcallback: " + webcallback
 
         # launch async task
-        init_build_process.delay(host, name, stack, project, url, branch,
+        init_build_process.delay(name, stack, project, url, branch,
             app_version, env_version, service_version, path_to_missile,
             webcallback)
 
