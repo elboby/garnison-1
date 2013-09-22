@@ -10,6 +10,7 @@ from gachette.stack import Stack
 
 # allow the usage of ssh config file by fabric
 env.use_ssh_config = True
+env.forward_agent = True
 
 # load config from file via environ variable
 config = os.environ.get('GACHETTE_SETTINGS', './config.rc')
