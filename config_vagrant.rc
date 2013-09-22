@@ -1,14 +1,16 @@
 # fabric
-BUILD_HOST = "vagrant@0.0.0.0"
+BUILD_HOST = "vagrant@192.168.3.201"
+BUILD_KEY_FILENAME = "~/.vagrant.d/insecure_private_key"
 
-REDIS_HOST = "0.0.0.0"
+REDIS_HOST = "192.168.3.201"
 REDIS_PORT = "6379"
 
 # celery
 BROKER_URL = 'redis://' + REDIS_HOST + ':' + REDIS_PORT + '/0'
 
 # flask
-SERVER_NAME = "192.168.3.201:5000"
+
+SERVER_NAME = "192.168.3.1:5000"
 BOOTSTRAP_USE_MINIFIED = True
 BOOTSTRAP_USE_CDN = True
 BOOTSTRAP_FONTAWESOME = True
