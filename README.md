@@ -11,16 +11,17 @@ To launch the webserver:
     $ cd garnison
     $ mkvirtualenv garnison
     $ pip install --upgrade -r requirements.pip
-    $ GACHETTE_SETTINGS=./config.rc ./manage.py runserver
+    $ GACHETTE_SETTINGS=./config_vagrant.rc ./manage.py runserver
     
 It can also run as a uwsgi app.
 
 To launch the celery consumer:
 
     $ cd garnison
-    $ GACHETTE_SETTINGS=./config.rc celery -A gachette_web.tasks worker -l debug --purge
+    $ GACHETTE_SETTINGS=./config_vagrant.rc celery -A gachette_web.tasks worker -l debug --purge
 
 You will need to have an instance of Redis running as well and configured in the `config.rc` file.
+By using `config_vagrant`, you will actually use the one in Bidasse/Vagrant VM.
 
 The build machine needs to have installed `trebuchet`:
 
