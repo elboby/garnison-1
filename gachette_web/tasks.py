@@ -52,7 +52,7 @@ def init_build_process(name, stack, project, url, branch, app_version, env_versi
     send_notification("stack #%s created" % stack)
 
     # call next step async
-    checkout_build_process.delay(name, url, branch, app_version, env_version, service_version, path_to_missile, webcallback)
+    checkout_build_process(name, url, branch, app_version, env_version, service_version, path_to_missile, webcallback)
 
 
 @celery.task
