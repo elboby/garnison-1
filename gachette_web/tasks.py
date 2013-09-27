@@ -8,6 +8,8 @@ from redis import Redis
 from gachette.working_copy import WorkingCopy
 from gachette.stack import Stack
 
+from operator import StackOperatorRedis
+
 # allow the usage of ssh config file by fabric
 env.use_ssh_config = True
 env.forward_agent = True
@@ -45,7 +47,7 @@ def init_build_process(name, stack, project, url, branch, app_version, env_versi
         print arg , ": ", locals()[arg]
     with settings(host_string=host, key_filename=key_filename):
         # TODO handle clone
-        new_stack = Stack(stack, target_folder="/var/gachette/")
+        new_stack = Stack(stack, target_folder="/var/gachette/", operator=StackOperatorRedis(redis_host=dd.REDIS_HOST))
         new_stack.persist()
     send_notification("stack #%s created" % stack)
 
@@ -94,6 +96,6 @@ def init_add_package_to_stack_process(stack, name, version, file_name):
     Add built package to the stack.
     """
     with settings(host_string=host, key_filename=key_filename):
-        s = Stack(stack, target_folder="/var/gachette/")
+        s = Stack(stack, target_folder="/var/gachette/", operator=StackOperatorRedis(redis_host=dd.REDIS_HOST))
         s.add_package(name, version=version, file_name=file_name)
         send_notification("stack #%s package %s (%s) added" % (stack, name, version))
