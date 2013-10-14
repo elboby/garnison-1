@@ -100,6 +100,13 @@ class PackageList(BaseResource):
     def get(self):
         return {"packages": RedisBackend().list_packages()}
 
+class Package(BaseResource):
+    def get(self, package):
+        self.reqparse.add_argument("version", type=str)
+        args = self.reqparse.parse_args()
+        package = RedisBackend().get_package(package, version=args["version"])
+        return package
+
 class LockList(BaseResource):
 
     def get(self):
@@ -121,6 +128,7 @@ RESOURCES = [
     (Stack, "/api/domains/<string:domain>/stacks/<string:stack>"),
     (Build, "/api/builds/<string:project>"),
     (PackageList, "/api/packages/"),
+    (Package, "/api/packages/<string:package>"),
     (LockList, "/api/locks/"),
 ]
 

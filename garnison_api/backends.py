@@ -132,12 +132,25 @@ class RedisBackend(object):
             raise TypeError("Package 'packages:%s' exists" % package)
         self.redis.set("packages:%s:%s" % (package, version), json.dumps(pkg_dict))
 
-    def get_package(self, package, version):
-        package_ = self.redis.get("packages:%s:%s" % (package, version))
-        return json.loads(package_) if package_ else package_
+    def get_package(self, package, version=None):
+        if version is not None:
+            package_ = self.redis.get("packages:%s:%s" % (package, version))
+            return json.loads(package_) if package_ else package_
+        versions = {}
+        for key in self.redis.keys("packages:%s:*" % package):
+            p = self.redis.get(key)
+            v = key.split(":")[2]
+            if not p:
+                raise AssertionError("Packages '%s', empty?" % key)
+            pcontent = json.loads(p)
+            # paranoid check
+            for deb_dict in pcontent:
+                assert deb_dict["version"] == v, "Version mismatch in package: %s" % key
+            versions[v] = pcontent
+        return versions
 
     def list_packages(self):
-        return map(lambda k: k.split(":")[1], self.redis.keys("packages:*"))
+        return list(set(map(lambda k: k.split(":")[1], self.redis.keys("packages:*"))))
 
     def available_packages(self, domain):
         if not self.domain_exists(domain):
