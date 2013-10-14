@@ -11,3 +11,4 @@ flask-bootstrap
 gevent-websocket
 la-gachette
 flask-script
+flask-restful
