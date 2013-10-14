@@ -4,6 +4,7 @@ from celery import Celery
 import os
 import sys
 import imp
+import datetime
 from redis import Redis
 from StringIO import StringIO
 
@@ -22,8 +23,6 @@ env.always_use_pty = False
 
 import pprint
 pp = pprint.PrettyPrinter(indent=2)
-
-pp.pprint(env)
 
 # load config from file via environ variable
 config = os.environ.get('GACHETTE_SETTINGS', './config.rc')
@@ -56,31 +55,37 @@ def send_notification(data):
     red.publish("all", ['publish', data])
 
 @celery.task
-def package_build_process(name, url, branch, pkg_version, path_to_missile=None,
+def package_build_process(name, url, branch, path_to_missile=None,
                           domain=None, stack=None):
     """
     Prepare working copy, checkout working copy, build
     """
-    args = ["name", "url", "branch", "pkg_version", "path_to_missile"]
+    # sys.stdin = StdinMock()
+    logfilename = "build-%s-%s-%s.log" % (name, branch, datetime.datetime.utcnow().isoformat())
+    logfilepath = os.path.join(dd.BUILD_LOGPATH, logfilename)
+    sys.stdout = open(logfilepath, "w")
+    sys.stderr = sys.stdout
+
+    args = ["name", "url", "branch", "path_to_missile"]
     for arg in args:
         print arg , ": ", locals()[arg]
 
-    sys.stdin = StdinMock()
-
-    
     with settings(host_string=host, key_filename=key_filename):
         wc = WorkingCopy(name, base_folder="/var/gachette")
         wc.prepare_environment()
-        # TODO get commit from checkout_working_copy
         wc.checkout_working_copy(url=url, branch=branch)
-        send_notification("WorkingCopy #%s updated with %s" % (name, branch))
-        wc.set_version(pkg_version)
-        result = wc.build(output_path="/var/gachette/debs", path_to_missile=path_to_missile)
-        RedisBackend().delete_lock("packages", name)
-        send_notification("WorkingCopy #%s build launched" % name)
-        # TODO retrieve list of package
 
-        pp.pprint(result)
+        latest_version = RedisBackend().get_latest_version(name)
+        new_base_version = RedisBackend().get_new_base_version(name)
+        new_version = wc.get_version_from_git(base_version=new_base_version)
+        # skip build if same commit hash
+        if latest_version.split("rev")[-1] != new_version.split("rev")[-1]:
+            wc.set_version(new_version)
+            result = wc.build(output_path="/var/gachette/debs", path_to_missile=path_to_missile)
+            RedisBackend().create_package(name, new_version, result)
+        RedisBackend().delete_lock("packages", name)
+
+        print result
     if domain is not None and stack is not None:
         for deb_dict in result:
             add_package_to_stack_process(domain, stack, deb_dict["name"],
@@ -94,4 +99,3 @@ def add_package_to_stack_process(domain, stack, name, version, file_name):
     with settings(host_string=host, key_filename=key_filename):
         s = Stack(domain, stack, meta_path="/var/gachette/", operator=StackOperatorRedis(redis_host=dd.REDIS_HOST))
         s.add_package(name, version=version, file_name=file_name)
-        send_notification("domain:stack #%s:%s package %s (%s) added" % (domain, stack, name, version))

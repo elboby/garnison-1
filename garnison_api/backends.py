@@ -67,6 +67,7 @@ class RedisBackend(object):
             commit = "",
         )
 
+    # DOMAINS
     def domain_exists(self, domain):
         val = self.redis.get("domains:%s" % domain)
         return True if val else False
@@ -92,6 +93,7 @@ class RedisBackend(object):
         all_keys = map(lambda k: k.split(":")[1], self.redis.keys("domains:*"))
         return list(set(all_keys))
 
+    # STACKS
     def stack_exists(self, domain, stack):
         val = self.redis.get("domains:%s:stacks:%s" % (domain, stack))
         return True if val else False
@@ -120,18 +122,22 @@ class RedisBackend(object):
         return map(lambda k: k.split(":")[3],
                    self.redis.keys("domains:%s:stacks:*" % domain))
 
+    # PACKAGES
     def package_exists(self, package, version):
-        val = self.redis.get("packages:%s:%s" % package)
+        val = self.redis.get("packages:%s:%s" % (package, version))
         return True if val else False
 
-    def create_package(self, package, pkg_dict):
-        if self.package_exists(package):
+    def create_package(self, package, version, pkg_dict):
+        if self.package_exists(package, version):
             raise TypeError("Package 'packages:%s' exists" % package)
-        self.redis.set("packages:%s" % package, json.dumps(pkg_dict))
+        self.redis.set("packages:%s:%s" % (package, version), json.dumps(pkg_dict))
 
-    def get_package(self, package):
-        package_ = self.redis.get("packages:%s" % package)
+    def get_package(self, package, version):
+        package_ = self.redis.get("packages:%s:%s" % (package, version))
         return json.loads(package_) if package_ else package_
+
+    def list_packages(self):
+        return map(lambda k: k.split(":")[1], self.redis.keys("packages:*"))
 
     def available_packages(self, domain):
         if not self.domain_exists(domain):
@@ -145,6 +151,25 @@ class RedisBackend(object):
         s["packages"][pkg_dict["name"]] = pkg_dict
         self.update_stack(domain, stack, packages=s["packages"])
 
+    def get_latest_version(self, package, return_base=None):
+        keys = self.redis.keys("packages:%s:*" % package)
+        if not keys:
+            return ""
+        full_version = max(keys).split(":")[2]
+        if return_base is None:
+            return full_version
+        return full_version.split("rev")[0]
+
+    def get_new_base_version(self, package):
+        latest = self.get_latest_version(package, return_base=True)
+        if not latest:
+            return "1"
+        return str(1 + int(latest))
+
+    # BUILDS
+
+
+    # LOCKS
     def lock_exists(self, type_, name):
         val = self.redis.get("locks:%s:%s" % (type_, name))
         return True if val else False

@@ -4,70 +4,61 @@
 
 <div class="container">
 
-<div class="row">
-  <div><span id="lock-list"><!-- AJAX FILL --></span>
+<h4>Locks</h4>
+  <div class="row">
+    <div class="col-md-6"><span id="lock-list"><!-- AJAX FILL --></span>
+    </div>
   </div>
-</div>
 
-<div class="panel-group" id="accordion">
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
-          Domains:
-        </a>
-        <span id="domain-list"><!-- AJAX FILL --></span>
-        [ <span class="glyphicon glyphicon-refresh" onclick="refreshDomainList();"></span> ]
-      </h4>
+<hr>
+
+  <h4>Domains: <span id="domain-list"><!-- AJAX FILL --></span>
+    [ <span class="glyphicon glyphicon-refresh" onclick="refreshDomainList();"></span> ]
+  </h4>
+
+  <form class="form-inline" role="form">
+    <div class="form-group">
+      <input type="text" id="new-domain-name" class="form-control" placeholder="New Domain Name">
     </div>
-    <div id="collapseOne" class="panel-collapse collapse in">
-      <div class="panel-body">
-        <form class="form-inline" role="form">
-          <div class="form-group">
-            <input type="text" id="new-domain-name" class="form-control" placeholder="New Domain name">
-          </div>
-          <a id="create-domain-button" class="btn btn-default">Create</a>
-        </form>
+    <a id="create-domain-button" class="btn btn-default">Create</a>
+  </form>
+
+<hr>
+
+  <h4>Stacks</h4>
+
+  <form class="form" role="form">
+    <div class="row">
+      <div class="col-md-6">
+        <select id="stack-target-domain" class="domain-list-select">
+        <!-- AJAX FILL -->
+        </select>
+        <input type="text" id="new-stack-version" class="form-control" placeholder="New Stack Version">
+      </div>
+        <div class="col-md-4">
+          <a id="create-stack-button" class="btn btn-default">Create</a>
+        </div>
+    </div>
+  </form>
+
+<hr>
+
+  <h4>Packages</h4>
+
+  <form class="form" role="form">
+    <div class="row">
+      <div class="col-md-6">
+        <select id="package-target-domain" class="domain-list-select">
+        <!-- AJAX FILL -->
+        </select>
+        <input type="text" id="package-target-stack" class="form-control" placeholder="Target Stack Version">
+        <input type="text" id="package-name" class="form-control" placeholder="Package Name (required)">
+      </div>
+      <div class="col-md-4">
+        <a id="build-package-button" class="btn btn-default">Build</a>
       </div>
     </div>
-  </div>
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseTwo">
-          Stacks
-        </a>
-      </h4>
-    </div>
-    <div id="collapseTwo" class="panel-collapse collapse">
-      <div class="panel-body">
-        <form class="form-inline" role="form">
-          <div class="form-group">
-            <select id="domain-list-select">
-            <!-- AJAX FILL -->
-            </select>
-            <a id="create-stack-button" class="btn btn-default">Create</a>
-            <input type="text" id="new-stack-version" class="form-control" placeholder="New Stack Version">
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <div class="panel panel-default">
-    <div class="panel-heading">
-      <h4 class="panel-title">
-        <a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion" href="#collapseThree">
-          Packages
-        </a>
-      </h4>
-    </div>
-    <div id="collapseThree" class="panel-collapse collapse">
-      <div class="panel-body">
-        Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
-      </div>
-    </div>
-  </div>
-</div>
+  </form>
 
 </div>
 
@@ -104,11 +95,12 @@ function refreshDomainList() {
     success: function(data, status, jqXHR) {
       console.log("Received domains: " + data.domains);
       $("#domain-list").text(data.domains.join(" - "))
-      s = $("#domain-list-select")
+      s = $("select.domain-list-select")
       s.empty();
+      $("<option />", {text: "Domains"}).appendTo(s);
       data.domains.forEach(function(d) {
-        $("<option />", {value: d, text: d}).appendTo($("#domain-list-select")[0]);
-      })
+        $("<option />", {value: d, text: d}).appendTo(s);
+      });
     }
   })
 }
@@ -116,10 +108,22 @@ refreshDomainList();
 
 function addNewStack() {
   jQuery.ajax({
-    url: "/api/domains/" + $("#domain-list-select").val() + "/stacks/" + $("#new-stack-version").val(),
+    url: "/api/domains/" + $("#stack-target-domain").val() + "/stacks/" + $("#new-stack-version").val(),
     type: "PUT",
     success: function(data, status, jqXHR) {
       console.log("Received PUT response: " + data.status + " " + data.message)
+    }
+  })
+}
+
+function buildPackage() {
+  jQuery.ajax({
+    url: "/api/builds/" + $("#package-name").val(),
+    data: {domain: $("#package-target-domain").val(), stack: $("#package-target-stack").val()},
+    type: "PUT",
+    success: function(data, status, jqXHR) {
+      console.log("Received PUT response: " + data.status + " " + data.message);
+      window.location.reload();
     }
   })
 }
@@ -152,6 +156,7 @@ refreshLocks();
 // Listeners
 $("#create-domain-button").click(addNewDomain);
 $("#create-stack-button").click(addNewStack);
+$("#build-package-button").click(buildPackage);
 
 
 </script>
