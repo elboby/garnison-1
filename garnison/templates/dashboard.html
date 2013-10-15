@@ -30,7 +30,12 @@
   <form class="form" role="form">
     <div class="row">
       <div class="col-md-6">
+        <b>Domain:</b>
         <select id="stack-target-domain" class="domain-list-select">
+        <!-- AJAX FILL -->
+        </select>
+        <b>Source Stack:</b>
+        <select id="stack-source-stack">
         <!-- AJAX FILL -->
         </select>
         <input type="text" id="new-stack-version" class="form-control" placeholder="New Stack Version">
@@ -48,6 +53,7 @@
   <form class="form" role="form">
     <div class="row">
       <div class="col-md-6">
+        <b>Domain:</b>
         <select id="package-target-domain" class="domain-list-select">
         <!-- AJAX FILL -->
         </select>
@@ -94,10 +100,10 @@ function refreshDomainList() {
     url: "/api/domains/",
     success: function(data, status, jqXHR) {
       console.log("Received domains: " + data.domains);
-      $("#domain-list").text(data.domains.join(" - "))
-      s = $("select.domain-list-select")
+      $("#domain-list").text(data.domains.join(" - "));
+      s = $("select.domain-list-select");
       s.empty();
-      $("<option />", {text: "Domains"}).appendTo(s);
+      // $("<option />", {text: "Domains"}).appendTo(s);
       data.domains.forEach(function(d) {
         $("<option />", {value: d, text: d}).appendTo(s);
       });
@@ -109,9 +115,26 @@ refreshDomainList();
 function addNewStack() {
   jQuery.ajax({
     url: "/api/domains/" + $("#stack-target-domain").val() + "/stacks/" + $("#new-stack-version").val(),
+    data: {copy_packages_from: $("#stack-source-stack").val()},
     type: "PUT",
     success: function(data, status, jqXHR) {
       console.log("Received PUT response: " + data.status + " " + data.message)
+    }
+  })
+}
+
+function refreshSourceStacks() {
+  domain = $("#stack-target-domain").val();
+  jQuery.ajax({
+    url: "/api/domains/" + domain + "/stacks/",
+    success: function(data, status, jqXHR) {
+      console.log("Received domain stacks: " + data.stacks.join(" - "));
+      // update stack select
+      s = $("#stack-source-stack");
+      s.empty();
+      data.stacks.forEach(function(stack) {
+        $("<option />", {value: stack, text: stack}).appendTo(s);
+      });
     }
   })
 }
@@ -157,6 +180,7 @@ refreshLocks();
 $("#create-domain-button").click(addNewDomain);
 $("#create-stack-button").click(addNewStack);
 $("#build-package-button").click(buildPackage);
+$("#stack-target-domain").change(refreshSourceStacks);
 
 
 </script>

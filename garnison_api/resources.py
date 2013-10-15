@@ -26,8 +26,6 @@ class BaseResource(Resource):
 class DomainList(BaseResource):
     def get(self):
         return {"domains": RedisBackend().list_domains()}
-    def post(self):
-        abort(405)
 
 class Domain(BaseResource):
     def get(self, domain):
@@ -51,13 +49,21 @@ class Stack(BaseResource):
         return stack if stack else abort(404)
 
     def put(self, domain, stack):
+        self.reqparse.add_argument("copy_packages_from", type=str)
+        args = self.reqparse.parse_args()
+        source = args["copy_packages_from"]
         try:
             RedisBackend().create_stack(domain, stack)
-            # TODO add package setup
-            return {"status": 201, "message": "Created"}
         except TypeError as e:
             print e
-            abort(400)
+            abort(400, status=400, message=repr(e))
+        if source:
+            try:
+                RedisBackend().copy_stack_packages(domain=domain, source=source, dest=stack)
+            except AssertionError as e:
+                print e
+                abort(400, status=400, message=repr(e))
+        return {"status": 201, "message": "Created"}
 
 class Build(BaseResource):
     def put(self, project):
@@ -89,9 +95,6 @@ class Build(BaseResource):
         #                       "master",
         #                       path_to_missile=PROJECTS_DATA[project]["path_to_missile"],
         #                       domain=domain, stack=stack)
-
-    def post(self, project):
-        print request.get_json()
 
     def get(self, project):
         print project

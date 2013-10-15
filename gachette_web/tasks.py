@@ -78,14 +78,17 @@ def package_build_process(name, url, branch, path_to_missile=None,
         latest_version = RedisBackend().get_latest_version(name)
         new_base_version = RedisBackend().get_new_base_version(name)
         new_version = wc.get_version_from_git(base_version=new_base_version)
-        # skip build if same commit hash
+        # skip build if same commit hash & TODO maybe remove to easily rebuild?
         if latest_version.split("rev")[-1] != new_version.split("rev")[-1]:
-            wc.set_version(new_version)
+            wc.set_version(app=new_version, env=new_version, service=new_version)
             result = wc.build(output_path="/var/gachette/debs", path_to_missile=path_to_missile)
+            RedisBackend().delete_lock("packages", name)
             RedisBackend().create_package(name, new_version, result)
-        RedisBackend().delete_lock("packages", name)
+            print "Built new:", name, branch, new_version
+        else:
+            result = RedisBackend().get_package(name, version=new_version)
+            print "Build exists:", name, branch, new_version
 
-        print result
     if domain is not None and stack is not None:
         for deb_dict in result:
             add_package_to_stack_process(domain, stack, deb_dict["name"],

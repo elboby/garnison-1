@@ -122,6 +122,14 @@ class RedisBackend(object):
         return map(lambda k: k.split(":")[3],
                    self.redis.keys("domains:%s:stacks:*" % domain))
 
+    def copy_stack_packages(self, domain=None, source=None, dest=None):
+        assert (domain and source and dest), "domain, source, dest are required kwargs"
+        assert source != dest, "Source and destination are the same, '%s'" % source
+        # TODO check dest stack write protect
+        s_stack = self.get_stack(domain, source)
+        d_stack = self.get_stack(domain, dest)
+        self.update_stack(domain, dest, packages=s_stack["packages"])
+
     # PACKAGES
     def package_exists(self, package, version):
         val = self.redis.get("packages:%s:%s" % (package, version))
