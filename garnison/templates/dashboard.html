@@ -59,6 +59,7 @@
         </select>
         <input type="text" id="package-target-stack" class="form-control" placeholder="Target Stack Version">
         <input type="text" id="package-name" class="form-control" placeholder="Package Name (required)">
+        <input type="text" id="package-branch" class="form-control" value="master" placeholder="Package Branch (default: master)" title="Package Branch (default: master)">
       </div>
       <div class="col-md-4">
         <a id="build-package-button" class="btn btn-default">Build</a>
@@ -142,7 +143,8 @@ function refreshSourceStacks() {
 function buildPackage() {
   jQuery.ajax({
     url: "/api/builds/" + $("#package-name").val(),
-    data: {domain: $("#package-target-domain").val(), stack: $("#package-target-stack").val()},
+    data: {domain: $("#package-target-domain").val(), stack: $("#package-target-stack").val(),
+           branch: $("#package-branch").val()},
     type: "PUT",
     success: function(data, status, jqXHR) {
       console.log("Received PUT response: " + data.status + " " + data.message);

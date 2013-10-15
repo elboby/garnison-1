@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="stack-block">
+    <h4>Domain: {{ domain }} Stack: {{ stack }}</h4>
+    <p id="stack-packages-block" style="line-height: 46px"><!-- AXAJ FILL --></p>
+  </div>
+
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+var domain = "{{ domain }}";
+var stack = "{{ stack }}";
+
+function getData() {
+  // stack data
+  jQuery.ajax({
+    url: "/api/domains/{{ domain }}/stacks/{{ stack }}",
+    success: function(data, status, jqXHR) {
+      stackData = data;
+      stackPackages = data.packages;
+    }
+  });
+  // Locks
+  jQuery.ajax({
+    url: "/api/locks/",
+    success: function(data, status, jqXHR) {
+      packageLocks = data.locks.packages;
+      if (typeof packageLocks == "undefined") {
+        packageLocks = [];
+      }
+    }
+  });
+  // Available packages
+  jQuery.ajax({
+    url: "/api/domains/{{ domain }}",
+    success: function(data, status, jqXHR) {
+      availablePackages = data.available_packages;
+    }
+  });
+}
+
+function checkDataReady() {
+  if (typeof availablePackages == "undefined" || typeof packageLocks == "undefined" || typeof stackData == "undefined") {
+    return false
+  }
+  return true
+}
+
+function renderStackData() {
+  if (!checkDataReady()) {
+    console.log("Setting timeout for render");
+    window.setTimeout(renderStackData, 0.01);
+    return
+  }
+
+  p = $("#stack-packages-block");
+  p.empty();
+  availablePackages.forEach(function(pkg) {
+    if (typeof stackPackages[pkg] == "undefined") {
+      // gray button
+      btn = $("<button class='btn btn-lg btn-default'>");
+      btn.text(pkg);
+      $("<br><small>-None-</small>").appendTo(btn);
+      btn.appendTo(p);
+    }
+    else {
+      btn = $("<button class='btn btn-lg btn-success'>");
+      btn.text(pkg)
+      $("<br><small>" + stackPackages[pkg]+ "</small>").appendTo(btn);
+      btn.appendTo(p);
+    }
+    if (packageLocks.indexOf(pkg) != -1) {
+      btn.removeClass("btn-default btn-success");
+      btn.addClass("btn-danger");
+    }
+    btn.click(function() {
+      branch = window.prompt("Which branch bro?", "master");
+      if (typeof branch == "undefined" || branch == null) {
+        console.log("Cancelled build");
+        return
+      }
+      $(this).removeClass("btn-success btn-default");
+      $(this).addClass("btn-danger");
+      jQuery.ajax({
+        url: "/api/builds/" + pkg,
+        data: {domain: "{{ domain }}", stack: "{{ stack }}", branch: branch},
+        type: "PUT",
+        success: function() {
+          console.log("Sent rebuild request for " + pkg)
+        }
+      })
+    });
+
+  });
+
+}
+
+getData();
+renderStackData();
+
+</script>
+{% endblock scripts %}
