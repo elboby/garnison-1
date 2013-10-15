@@ -165,11 +165,11 @@ class RedisBackend(object):
             raise TypeError("Domain 'domains:%s' does not exist" % domain)
         return self.get_domain(domain)["available_packages"]
 
-    def add_stack_package(self, domain, stack, pkg_dict):
+    def add_stack_package(self, domain, stack, pkg_name, pkg_version):
         if not self.stack_exists(domain, stack):
-            raise TypeError("Stack 'domains:%s:stacks:%s' exists" % (domain, stack))
+            raise TypeError("Stack 'domains:%s:stacks:%s' does not exist" % (domain, stack))
         s = self.get_stack(domain, stack)
-        s["packages"][pkg_dict["name"]] = pkg_dict
+        s["packages"][pkg_name] = pkg_version
         self.update_stack(domain, stack, packages=s["packages"])
 
     def get_latest_version(self, package, return_base=None):

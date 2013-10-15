@@ -6,7 +6,6 @@ import sys
 import imp
 import datetime
 from redis import Redis
-from StringIO import StringIO
 
 from gachette.lib.working_copy import WorkingCopy
 from gachette.lib.stack import Stack
@@ -39,13 +38,9 @@ celery.add_defaults(dd)
 key_filename = None if not hasattr(dd, "BUILD_KEY_FILENAME") else dd.BUILD_KEY_FILENAME
 host = dd.BUILD_HOST
 
-class StdinMock(StringIO):
-    """Replacement to patch sys.stdin to use fabric within celery task"""
-    def fileno(self):
-        return 0
-
-    def read(self, *args):
-        return 0
+# TODO REMOVE - FOR EASY TESTING
+if not RedisBackend().get_domain("main")["available_packages"]:
+    RedisBackend().update_domain("main", available_packages=["test_config", "test_application"])
 
 def send_notification(data):
     """
@@ -60,7 +55,6 @@ def package_build_process(name, url, branch, path_to_missile=None,
     """
     Prepare working copy, checkout working copy, build
     """
-    # sys.stdin = StdinMock()
     logfilename = "build-%s-%s-%s.log" % (name, branch, datetime.datetime.utcnow().isoformat())
     logfilepath = os.path.join(dd.BUILD_LOGPATH, logfilename)
     sys.stdout = open(logfilepath, "w")
@@ -78,21 +72,17 @@ def package_build_process(name, url, branch, path_to_missile=None,
         latest_version = RedisBackend().get_latest_version(name)
         new_base_version = RedisBackend().get_new_base_version(name)
         new_version = wc.get_version_from_git(base_version=new_base_version)
-        # skip build if same commit hash & TODO maybe remove to easily rebuild?
-        if latest_version.split("rev")[-1] != new_version.split("rev")[-1]:
-            wc.set_version(app=new_version, env=new_version, service=new_version)
-            result = wc.build(output_path="/var/gachette/debs", path_to_missile=path_to_missile)
-            RedisBackend().delete_lock("packages", name)
-            RedisBackend().create_package(name, new_version, result)
-            print "Built new:", name, branch, new_version
-        else:
-            result = RedisBackend().get_package(name, version=new_version)
-            print "Build exists:", name, branch, new_version
+        # skipping existing build removed
+        new_version += "-%s" % branch
+        wc.set_version(app=new_version, env=new_version, service=new_version)
+        result = wc.build(output_path="/var/gachette/debs", path_to_missile=path_to_missile)
+        RedisBackend().delete_lock("packages", name)
+        RedisBackend().create_package(name, new_version, result)
+        print "Built new:", name, branch, new_version
 
     if domain is not None and stack is not None:
-        for deb_dict in result:
-            add_package_to_stack_process(domain, stack, deb_dict["name"],
-                                         deb_dict["version"], deb_dict["file_name"])
+        RedisBackend().add_stack_package(domain, stack, name, new_version)
+        print "Added to 'domains:%s:stacks:%s:packages' as {'%s': '%s'}" % (domain, stack, name, new_version)
 
 @celery.task
 def add_package_to_stack_process(domain, stack, name, version, file_name):
