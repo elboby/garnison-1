@@ -118,7 +118,17 @@ class RedisBackend(object):
         s.update(kwargs)
         self.redis.set("domains:%s:stacks:%s" % (domain, stack), json.dumps(s))
 
-    def list_stacks(self, domain):
+    def list_stacks(self, domain, detail=None):
+        if detail:
+            keys = self.redis.keys("domains:%s:stacks:*" % domain)
+            values = self.redis.mget(keys)
+            assert len(keys) == len(values)
+            stacks = []
+            for k, v in zip(keys, values):
+                stacks.append({k.split(":")[3]: json.loads(v)})
+            sort_key = lambda s: s.values()[0]["meta"]["created_at"]
+            return sorted(stacks, key=sort_key, reverse=True)
+
         return map(lambda k: k.split(":")[3],
                    self.redis.keys("domains:%s:stacks:*" % domain))
 

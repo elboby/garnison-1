@@ -42,7 +42,13 @@ class Domain(BaseResource):
 
 class StackList(BaseResource):
     def get(self, domain):
-        return {"stacks": RedisBackend().list_stacks(domain)}
+        self.reqparse.add_argument("detail", type=str)
+        args = self.reqparse.parse_args()
+        if args["detail"]:
+            stacks = RedisBackend().list_stacks(domain, detail=True)
+        else:
+            stacks = RedisBackend().list_stacks(domain)
+        return {"stacks": stacks}
 
 class Stack(BaseResource):
     def get(self, domain, stack):
