@@ -121,12 +121,16 @@ class RedisBackend(object):
     def list_stacks(self, domain, detail=None):
         if detail:
             keys = self.redis.keys("domains:%s:stacks:*" % domain)
+            if not keys:
+                return []
             values = self.redis.mget(keys)
             assert len(keys) == len(values)
             stacks = []
             for k, v in zip(keys, values):
-                stacks.append({k.split(":")[3]: json.loads(v)})
-            sort_key = lambda s: s.values()[0]["meta"]["created_at"]
+                stack_dict = json.loads(v)
+                stack_dict["name"] = k.split(":")[3]
+                stacks.append(stack_dict)
+            sort_key = lambda s: s["meta"]["created_at"]
             return sorted(stacks, key=sort_key, reverse=True)
 
         return map(lambda k: k.split(":")[3],
