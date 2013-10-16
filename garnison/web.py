@@ -20,7 +20,7 @@ def home():
 def dashboard():
     return render_template('dashboard.html')
 
-@bp.route('/<string:domain>/<string:stack>/build')
+@bp.route('/domains/<string:domain>/stacks/<string:stack>')
 def stack(domain, stack):
 
     return render_template('stack.html', **{"domain": domain, "stack": stack})
