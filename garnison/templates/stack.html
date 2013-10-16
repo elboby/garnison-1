@@ -56,7 +56,7 @@ function checkDataReady() {
 function renderStackData() {
   if (!checkDataReady()) {
     console.log("Setting timeout for render");
-    window.setTimeout(renderStackData, 0.01);
+    window.setTimeout(renderStackData, 0.05);
     return
   }
 

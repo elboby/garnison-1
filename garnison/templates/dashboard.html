@@ -1,5 +1,27 @@
 {% extends "base.html" %}
 
+{% block styles %}
+{{super()}}
+
+<style type="text/css">
+  a {
+    color: black;
+  }
+  a:hover {
+    text-decoration: none;
+  }
+  span.glyphicon-red {
+    color: red;
+  }
+    span.glyphicon-green {
+    color: green;
+  }
+  span.float-right {
+
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="container">
@@ -69,8 +91,8 @@
 
   <hr>
 
-  <h4>Stack Directory</h4>
-  <ul id="stack-directory"></ul>
+  <h4>Stack Directory for Domain: <select id="stack-directory-domain" class="domain-list-select"></select></h4>
+  <ul id="stack-directory" class="list-group"></ul>
 
 </div>
 
@@ -96,7 +118,7 @@ function addNewDomain() {
     type: "PUT",
     success: function(data, status, jqXHR) {
       console.log("Received PUT response: " + data.status + " " + data.message);
-      refreshDomainList()
+      refreshDomainList();
     }
   })
 }
@@ -113,10 +135,10 @@ function refreshDomainList() {
       data.domains.forEach(function(d) {
         $("<option />", {value: d, text: d}).appendTo(s);
       });
+      refreshSourceStacks();
     }
   })
 }
-refreshDomainList();
 
 function addNewStack() {
   jQuery.ajax({
@@ -131,6 +153,10 @@ function addNewStack() {
 
 function refreshSourceStacks() {
   domain = $("#stack-target-domain").val();
+  if (domain == null) {
+    window.setTimeout(refreshSourceStacks, 0.05);
+    return
+  }
   jQuery.ajax({
     url: "/api/domains/" + domain + "/stacks/",
     success: function(data, status, jqXHR) {
@@ -181,6 +207,42 @@ function refreshLocks() {
     }
   })
 }
+
+function stackDirectoryListItem(domain, stack) {
+  li = $("<li class='list-group-item'>");
+  anchor = $("<a href=/domains/" + domain + "/stacks/" + stack.name + ">");
+  icon = $("<span class='glyphicon'>");
+  if (stack.meta.stable) {
+    icon.addClass("glyphicon-ok glyphicon-green");
+    li.attr("title", "stable");
+  }
+  else {
+    icon.addClass("glyphicon-remove glyphicon-red");
+    li.attr("title", "not stable");
+  }
+  anchor.append(icon);
+  anchor.append(" &middot; Stack: " + stack.name);
+  li.append(anchor);
+  li.append($("<span class='label label-default pull-right'>" + stack.meta.created_at.split(".")[0] + " UTC</span>"))
+  return li
+}
+
+function refreshStackDirectory() {
+  var domain = $("#stack-directory-domain").val();
+  $("#stack-directory").empty();
+  jQuery.ajax({
+    url: "/api/domains/" + domain + "/stacks/?detail=1",
+    success: function(data, status, jqXHR) {
+      data.stacks.forEach(function(stack) {
+        $("#stack-directory").append(stackDirectoryListItem(domain, stack));
+      });
+    }
+  });
+}
+
+refreshDomainList();
+refreshSourceStacks();
+refreshStackDirectory();
 refreshLocks();
 
 // Listeners
@@ -188,6 +250,7 @@ $("#create-domain-button").click(addNewDomain);
 $("#create-stack-button").click(addNewStack);
 $("#build-package-button").click(buildPackage);
 $("#stack-target-domain").change(refreshSourceStacks);
+$("#stack-directory-domain").change(refreshStackDirectory);
 
 
 </script>
