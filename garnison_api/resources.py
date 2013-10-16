@@ -1,5 +1,6 @@
 import json
 
+import flask
 from flask import Flask, request
 from flask.ext.restful import Resource, abort, reqparse
 
@@ -36,8 +37,8 @@ class Domain(BaseResource):
         try:
             RedisBackend().create_domain(domain)
             return {"status": 201, "message": "Created"}
-        except TypeError:
-            abort(400)
+        except TypeError as e:
+            abort(409, status=409, message="Conflict", info=str(e))
 
 class StackList(BaseResource):
     def get(self, domain):
@@ -46,7 +47,7 @@ class StackList(BaseResource):
 class Stack(BaseResource):
     def get(self, domain, stack):
         stack = RedisBackend().get_stack(domain, stack)
-        return stack if stack else abort(404)
+        return stack if stack else abort(404, status=404, info="Stack not found")
 
     def put(self, domain, stack):
         self.reqparse.add_argument("copy_packages_from", type=str)
@@ -56,7 +57,7 @@ class Stack(BaseResource):
             RedisBackend().create_stack(domain, stack)
         except TypeError as e:
             print e
-            abort(400, status=400, message=repr(e))
+            abort(409, status=409, message="Conflict", info=str(e))
         if source:
             try:
                 RedisBackend().copy_stack_packages(domain=domain, source=source, dest=stack)
@@ -75,9 +76,9 @@ class Build(BaseResource):
         
         if domain and stack:
             if not RedisBackend().stack_exists(domain, stack):
-                abort(404)
+                abort(404, status=404, message="Not Found", info="Domain and/or stack does not exist")
         if project not in PROJECTS_DATA:
-            abort(400)
+            abort(404, status=404, message="Not Found", info="Project not found")
         try:
             RedisBackend().create_lock("packages", project)
         except TypeError as e:
@@ -107,8 +108,11 @@ class Package(BaseResource):
     def get(self, package):
         self.reqparse.add_argument("version", type=str)
         args = self.reqparse.parse_args()
-        package = RedisBackend().get_package(package, version=args["version"])
-        return package
+        version = args["version"]
+        package = RedisBackend().get_package(package, version=version)
+        if not package:
+            abort(404, status=404, message="Not Found", info="Package not found")
+        return package if not version else {version: package}
 
 class LockList(BaseResource):
 
@@ -121,7 +125,7 @@ class LockList(BaseResource):
         args = self.reqparse.parse_args()
         type_, name = args["type"], args["name"]
         RedisBackend().delete_lock(type_, name)
-        return {"status": 200, "message": "Ok"}
+        return flask.Response(status=204)
 
 
 RESOURCES = [
