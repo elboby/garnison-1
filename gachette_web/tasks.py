@@ -39,6 +39,8 @@ key_filename = None if not hasattr(dd, "BUILD_KEY_FILENAME") else dd.BUILD_KEY_F
 host = dd.BUILD_HOST
 
 # TODO REMOVE - FOR EASY TESTING
+if not RedisBackend().get_domain("main"):
+    RedisBackend().create_domain("main")
 if not RedisBackend().get_domain("main")["available_packages"]:
     RedisBackend().update_domain("main", available_packages=["test_config", "test_application"])
 
