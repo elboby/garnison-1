@@ -15,3 +15,5 @@ BOOTSTRAP_FONTAWESOME = True
 SECRET_KEY = 'sdfdsfdsfs2322323dsfdf'
 CSRF_ENABLED = False
 CSRF_SESSION_KEY = "dsvdfd fdfvdffdvfdfgfdgfdg"
+
+BUILD_LOGPATH = "/tmp/gachette_log"

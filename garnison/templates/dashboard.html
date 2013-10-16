@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+<h4>Locks</h4>
+  <div class="row">
+    <div class="col-md-6"><span id="lock-list"><!-- AJAX FILL --></span>
+    </div>
+  </div>
+
+<hr>
+
+  <h4>Domains: <span id="domain-list"><!-- AJAX FILL --></span>
+    [ <span class="glyphicon glyphicon-refresh" onclick="refreshDomainList();"></span> ]
+  </h4>
+
+  <form class="form-inline" role="form">
+    <div class="form-group">
+      <input type="text" id="new-domain-name" class="form-control" placeholder="New Domain Name">
+    </div>
+    <a id="create-domain-button" class="btn btn-default">Create</a>
+  </form>
+
+<hr>
+
+  <h4>Stacks</h4>
+
+  <form class="form" role="form">
+    <div class="row">
+      <div class="col-md-6">
+        <b>Domain:</b>
+        <select id="stack-target-domain" class="domain-list-select">
+        <!-- AJAX FILL -->
+        </select>
+        <b>Source Stack:</b>
+        <select id="stack-source-stack">
+        <!-- AJAX FILL -->
+        </select>
+        <input type="text" id="new-stack-version" class="form-control" placeholder="New Stack Version">
+      </div>
+        <div class="col-md-4">
+          <a id="create-stack-button" class="btn btn-default">Create</a>
+        </div>
+    </div>
+  </form>
+
+<hr>
+
+  <h4>Packages</h4>
+
+  <form class="form" role="form">
+    <div class="row">
+      <div class="col-md-6">
+        <b>Domain:</b>
+        <select id="package-target-domain" class="domain-list-select">
+        <!-- AJAX FILL -->
+        </select>
+        <input type="text" id="package-target-stack" class="form-control" placeholder="Target Stack Version">
+        <input type="text" id="package-name" class="form-control" placeholder="Package Name (required)">
+        <input type="text" id="package-branch" class="form-control" value="master" placeholder="Package Branch (default: master)" title="Package Branch (default: master)">
+      </div>
+      <div class="col-md-4">
+        <a id="build-package-button" class="btn btn-default">Build</a>
+      </div>
+    </div>
+  </form>
+
+  <hr>
+
+  <h4>Stack Directory</h4>
+  <ul id="stack-directory"></ul>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+  $('form input').keydown(function(event){
+    if(event.keyCode == 13) {
+      event.preventDefault();
+      return false;
+    }
+  });
+});
+
+function addNewDomain() {
+  jQuery.ajax({
+    url: "/api/domains/" + $("#new-domain-name").val(),
+    type: "PUT",
+    success: function(data, status, jqXHR) {
+      console.log("Received PUT response: " + data.status + " " + data.message);
+      refreshDomainList()
+    }
+  })
+}
+
+function refreshDomainList() {
+  jQuery.ajax({
+    url: "/api/domains/",
+    success: function(data, status, jqXHR) {
+      console.log("Received domains: " + data.domains);
+      $("#domain-list").text(data.domains.join(" - "));
+      s = $("select.domain-list-select");
+      s.empty();
+      // $("<option />", {text: "Domains"}).appendTo(s);
+      data.domains.forEach(function(d) {
+        $("<option />", {value: d, text: d}).appendTo(s);
+      });
+    }
+  })
+}
+refreshDomainList();
+
+function addNewStack() {
+  jQuery.ajax({
+    url: "/api/domains/" + $("#stack-target-domain").val() + "/stacks/" + $("#new-stack-version").val(),
+    data: {copy_packages_from: $("#stack-source-stack").val()},
+    type: "PUT",
+    success: function(data, status, jqXHR) {
+      console.log("Received PUT response: " + data.status + " " + data.message)
+    }
+  })
+}
+
+function refreshSourceStacks() {
+  domain = $("#stack-target-domain").val();
+  jQuery.ajax({
+    url: "/api/domains/" + domain + "/stacks/",
+    success: function(data, status, jqXHR) {
+      console.log("Received domain stacks: " + data.stacks.join(" - "));
+      // update stack select
+      s = $("#stack-source-stack");
+      s.empty();
+      data.stacks.forEach(function(stack) {
+        $("<option />", {value: stack, text: stack}).appendTo(s);
+      });
+    }
+  })
+}
+
+function buildPackage() {
+  jQuery.ajax({
+    url: "/api/builds/" + $("#package-name").val(),
+    data: {domain: $("#package-target-domain").val(), stack: $("#package-target-stack").val(),
+           branch: $("#package-branch").val()},
+    type: "PUT",
+    success: function(data, status, jqXHR) {
+      console.log("Received PUT response: " + data.status + " " + data.message);
+      window.location.reload();
+    }
+  })
+}
+
+function refreshLocks() {
+  jQuery.ajax({
+    url: "/api/locks/",
+    success: function(data, status, jqXHR) {
+      console.log("Received locks: " + data.locks);
+      $("#lock-list").empty();
+      if (data.locks.deployments) {
+        data.locks.deployments.forEach(function(d) {
+          btn = $("<a class='btn btn-danger' href=''>");
+          btn.text(d);
+          $("#lock-list").append(btn);
+        })
+      }
+      if (data.locks.packages) {
+        data.locks.packages.forEach(function(p) {
+          btn = $("<a class='btn btn-danger' href=''>");
+          btn.text(p);
+          $("#lock-list").append(btn);
+        })
+      }
+    }
+  })
+}
+refreshLocks();
+
+// Listeners
+$("#create-domain-button").click(addNewDomain);
+$("#create-stack-button").click(addNewStack);
+$("#build-package-button").click(buildPackage);
+$("#stack-target-domain").change(refreshSourceStacks);
+
+
+</script>
+
+{% endblock scripts %}

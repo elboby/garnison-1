@@ -11,8 +11,11 @@
   <!-- Collect the nav links, forms, and other content for toggling -->
   <div class="collapse navbar-collapse navbar-ex1-collapse">
     <ul class="nav navbar-nav">
+        {#
         <li class="active"><a href="{{ url_for('garnison-web.home') }}">Home</a></li>
         <li><a href="{{ url_for('gachette-web-build.build_create') }}">Build</a></li>
+        #}
+        <li class="active"><a href="{{ url_for('garnison-web.dashboard')}}">Dashboard</a></li>
         <li><a href="#">Deploy</a></li>
         <li><a href="#">Status</a></li>
       </ul>

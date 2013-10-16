@@ -61,7 +61,7 @@ def build_create():
         print "webcallback: " + webcallback
 
         # launch async task
-        init_build_process.delay(name, stack, project, url, branch,
+        init_build_process(name, stack, project, url, branch,
             app_version, env_version, service_version, path_to_missile,
             webcallback)
 

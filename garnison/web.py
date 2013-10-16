@@ -15,3 +15,12 @@ def home():
         print rule.endpoint
 
     return render_template('index.html')
+
+@bp.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@bp.route('/domains/<string:domain>/stacks/<string:stack>')
+def stack(domain, stack):
+
+    return render_template('stack.html', **{"domain": domain, "stack": stack})
